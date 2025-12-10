@@ -52,7 +52,7 @@ export function SearchByImageView() {
     setIsSearching(true);
     
     // Random delay between 1-2 seconds
-    const delay = Math.floor(Math.random() * 1000) + 1000;
+    const delay = Math.floor(Math.random() * 1000) + 3000;
     
     setTimeout(() => {
       const fileName = uploadedFileName.toLowerCase();

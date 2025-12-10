@@ -18,7 +18,7 @@ export function SearchByPromptView() {
     setIsSearching(true);
     
     // Random delay between 1-2 seconds
-    const delay = Math.floor(Math.random() * 1000) + 1000;
+    const delay = Math.floor(Math.random() * 1000) + 2000;
     
     setTimeout(() => {
       const promptLower = prompt.toLowerCase();
