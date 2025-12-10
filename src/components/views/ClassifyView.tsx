@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-type ClassificationStep = 1 | 2 | 3 | 4 | 5 | 6 | 'complete';
+type ClassificationStep = 1 | 2 | 3 | 4 | 5 | 'complete';
 
 interface DocTypeGroup {
   name: string;
@@ -20,13 +20,16 @@ export function ClassifyView() {
   
   const [step, setStep] = useState<ClassificationStep>(1);
   const [classifications, setClassifications] = useState<Record<number, string>>({
-    1: '', 2: '', 3: '', 4: '', 5: '', 6: ''
+    1: '', 2: '', 3: '', 4: '', 5: ''
   });
 
   // Group documents by type
   const docGroups: DocTypeGroup[] = useMemo(() => {
-    // ID documents (id1.jpg - id17.jpg)
-    const idDocs = documents.filter((doc) => /^id\d+\.jpg$/i.test(doc.name));
+    // ID documents (id1.jpg - id17.jpg) AND musaddiq uni card
+    const idDocs = documents.filter((doc) => 
+      /^id\d+\.jpg$/i.test(doc.name) || 
+      (doc.name.toLowerCase().includes('musaddiq') && doc.name.toLowerCase().includes('uni'))
+    );
     
     // License documents (lic1.jpg - lic6.jpg)
     const licDocs = documents.filter((doc) => /^lic\d+\.jpg$/i.test(doc.name));
@@ -36,11 +39,6 @@ export function ClassifyView() {
     
     // Passport documents (pass1.jpg - pass8.jpg)
     const passDocs = documents.filter((doc) => /^pass\d+\.jpg$/i.test(doc.name));
-    
-    // Musaddiq uni card
-    const uniCardDocs = documents.filter((doc) => 
-      doc.name.toLowerCase().includes('musaddiq') && doc.name.toLowerCase().includes('uni')
-    );
     
     // Musaddiq visa
     const visaDocs = documents.filter((doc) => 
@@ -57,7 +55,6 @@ export function ClassifyView() {
       { name: 'License Documents', docs: licDocs, randomDoc: getRandomDoc(licDocs) },
       { name: 'NIC Documents', docs: nicDocs, randomDoc: getRandomDoc(nicDocs) },
       { name: 'Passport Documents', docs: passDocs, randomDoc: getRandomDoc(passDocs) },
-      { name: 'Uni Card', docs: uniCardDocs, randomDoc: getRandomDoc(uniCardDocs) },
       { name: 'Visa', docs: visaDocs, randomDoc: getRandomDoc(visaDocs) },
     ];
   }, [documents]);

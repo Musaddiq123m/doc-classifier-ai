@@ -10,6 +10,7 @@ export function SearchByImageView() {
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
   const [searchResults, setSearchResults] = useState<typeof documents>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -48,36 +49,44 @@ export function SearchByImageView() {
   };
 
   const handleSearch = () => {
-    const fileName = uploadedFileName.toLowerCase();
+    setIsSearching(true);
     
-    let results: typeof documents = [];
+    // Random delay between 1-2 seconds
+    const delay = Math.floor(Math.random() * 1000) + 1000;
+    
+    setTimeout(() => {
+      const fileName = uploadedFileName.toLowerCase();
+      
+      let results: typeof documents = [];
 
-    if (fileName.includes('musaddiq')) {
-      // If Musaddiq.JPG -> return musaddiq uni card.jpg and musaddiq visa.jpg
-      results = documents.filter((doc) => 
-        doc.name.toLowerCase().includes('musaddiq')
-      );
-    } else if (fileName.includes('us3')) {
-      // If us3.jpg -> return id6, lic1, lic2, musaddiq uni card.jpg, musaddiq visa.jpg
-      results = documents.filter((doc) => {
-        const name = doc.name.toLowerCase();
-        return (
-          name === 'id6.jpg' ||
-          name === 'lic1.jpg' ||
-          name === 'lic2.jpg' ||
-          name.includes('musaddiq')
+      if (fileName.includes('musaddiq')) {
+        // If Musaddiq.JPG -> return musaddiq uni card.jpg and musaddiq visa.jpg
+        results = documents.filter((doc) => 
+          doc.name.toLowerCase().includes('musaddiq')
         );
-      });
-    } else {
-      // Fallback: randomly return 1 pic
-      if (documents.length > 0) {
-        const randomIndex = Math.floor(Math.random() * documents.length);
-        results = [documents[randomIndex]];
+      } else if (fileName.includes('us3')) {
+        // If us3.jpg -> return id6, lic1, lic2, musaddiq uni card.jpg, musaddiq visa.jpg
+        results = documents.filter((doc) => {
+          const name = doc.name.toLowerCase();
+          return (
+            name === 'id6.jpg' ||
+            name === 'lic1.jpg' ||
+            name === 'lic2.jpg' ||
+            name.includes('musaddiq')
+          );
+        });
+      } else {
+        // Fallback: randomly return 1 pic
+        if (documents.length > 0) {
+          const randomIndex = Math.floor(Math.random() * documents.length);
+          results = [documents[randomIndex]];
+        }
       }
-    }
 
-    setSearchResults(results);
-    setHasSearched(true);
+      setSearchResults(results);
+      setHasSearched(true);
+      setIsSearching(false);
+    }, delay);
   };
 
   return (
@@ -142,11 +151,21 @@ export function SearchByImageView() {
               </p>
               <Button 
                 onClick={handleSearch}
+                disabled={isSearching}
                 className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
                 size="lg"
               >
-                <Search className="w-4 h-4 mr-2" />
-                Search Similar Documents
+                {isSearching ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Search Similar Documents
+                  </>
+                )}
               </Button>
             </>
           )}
