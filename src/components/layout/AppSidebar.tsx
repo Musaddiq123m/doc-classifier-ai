@@ -1,11 +1,10 @@
-import { Upload, FolderOpen, Tags, ScanSearch, MessageSquareText, FileText } from 'lucide-react';
+import { Upload, FolderOpen, ScanSearch, MessageSquareText, FileText } from 'lucide-react';
 import { useDocumentStore } from '@/store/documentStore';
 import { ViewType } from '@/types/document';
 import { cn } from '@/lib/utils';
 
 const navItems: { id: ViewType; label: string; icon: React.ElementType }[] = [
   { id: 'upload', label: 'Upload Documents', icon: Upload },
-  { id: 'classify', label: 'Classify Documents', icon: Tags },
   { id: 'view', label: 'View Documents', icon: FolderOpen },
   { id: 'search-image', label: 'Search by Image', icon: ScanSearch },
   { id: 'search-prompt', label: 'Search by Prompt', icon: MessageSquareText },
