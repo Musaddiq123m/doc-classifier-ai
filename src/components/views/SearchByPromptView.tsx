@@ -19,15 +19,28 @@ export function SearchByPromptView() {
     
     // Simulate search delay
     setTimeout(() => {
-      // Hardcoded: Return 6.jpg, 9.jpg, and 10.jpg
-      const results = documents.filter((doc) => {
-        const match = doc.name.match(/^(\d+)\.(png|jpg|jpeg)$/i);
-        if (match) {
-          const num = parseInt(match[1]);
-          return num === 6 || num === 9 || num === 10;
+      const promptLower = prompt.toLowerCase();
+      let results: typeof documents = [];
+
+      if (promptLower.includes('women')) {
+        // Return id9, id10, nic6, nic9, nic10, pass3, pass7, pass8
+        const targetNames = ['id9.jpg', 'id10.jpg', 'nic6.jpg', 'nic9.jpg', 'nic10.jpg', 'pass3.jpg', 'pass7.jpg', 'pass8.jpg'];
+        results = documents.filter((doc) => 
+          targetNames.includes(doc.name.toLowerCase())
+        );
+      } else if (promptLower.includes('usa')) {
+        // Return lic1, nic5
+        const targetNames = ['lic1.jpg', 'nic5.jpg'];
+        results = documents.filter((doc) => 
+          targetNames.includes(doc.name.toLowerCase())
+        );
+      } else {
+        // Fallback: randomly return 1 pic
+        if (documents.length > 0) {
+          const randomIndex = Math.floor(Math.random() * documents.length);
+          results = [documents[randomIndex]];
         }
-        return false;
-      });
+      }
       
       setSearchResults(results);
       setHasSearched(true);
@@ -90,7 +103,7 @@ export function SearchByPromptView() {
         {/* Suggested prompts */}
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="text-xs text-muted-foreground">Try:</span>
-          {['Find all invoices', 'Show receipts from last month', 'Documents with signatures'].map((suggestion) => (
+          {['Find women documents', 'Show USA documents', 'Find all invoices'].map((suggestion) => (
             <button
               key={suggestion}
               onClick={() => setPrompt(suggestion)}
