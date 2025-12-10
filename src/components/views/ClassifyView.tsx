@@ -6,15 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-type ClassificationStep = 'numbered' | 'musaddiq' | 'complete';
+type ClassificationStep = 1 | 2 | 3 | 'complete';
 
 export function ClassifyView() {
   const { documents, setClassification, setCurrentView, setIsClassified } = useDocumentStore();
   const { toast } = useToast();
   
-  const [step, setStep] = useState<ClassificationStep>('numbered');
-  const [numberedClassification, setNumberedClassification] = useState('');
-  const [musaddiqClassification, setMusaddiqClassification] = useState('');
+  const [step, setStep] = useState<ClassificationStep>(1);
+  const [classification1, setClassification1] = useState('');
+  const [classification2, setClassification2] = useState('');
+  const [classification3, setClassification3] = useState('');
 
   // Get a random numbered document (1-14)
   const randomNumberedDoc = useMemo(() => {
@@ -26,10 +27,16 @@ export function ClassifyView() {
     return numberedDocs[Math.floor(Math.random() * numberedDocs.length)];
   }, [documents]);
 
-  // Get musaddiq documents
-  const musaddiqDocs = useMemo(() => {
-    return documents.filter((doc) => 
-      doc.name.toLowerCase().includes('musaddiq')
+  // Get specific musaddiq documents
+  const uniCardDoc = useMemo(() => {
+    return documents.find((doc) => 
+      doc.name.toLowerCase().includes('musaddiq') && doc.name.toLowerCase().includes('uni')
+    );
+  }, [documents]);
+
+  const visaDoc = useMemo(() => {
+    return documents.find((doc) => 
+      doc.name.toLowerCase().includes('musaddiq') && doc.name.toLowerCase().includes('visa')
     );
   }, [documents]);
 
@@ -43,8 +50,8 @@ export function ClassifyView() {
       .map((doc) => doc.id);
   }, [documents]);
 
-  const handleNumberedClassification = () => {
-    if (!numberedClassification.trim()) {
+  const handleStep1 = () => {
+    if (!classification1.trim()) {
       toast({
         title: "Classification required",
         description: "Please enter a classification type",
@@ -52,17 +59,17 @@ export function ClassifyView() {
       });
       return;
     }
-
-    setClassification(numberedClassification.trim(), numberedDocIds);
+    // Apply to all numbered documents
+    setClassification(classification1.trim(), numberedDocIds);
     toast({
       title: "Classification applied",
-      description: `Applied "${numberedClassification}" to ${numberedDocIds.length} documents`,
+      description: `Applied "${classification1}" to ${numberedDocIds.length} documents`,
     });
-    setStep('musaddiq');
+    setStep(2);
   };
 
-  const handleMusaddiqClassification = () => {
-    if (!musaddiqClassification.trim()) {
+  const handleStep2 = () => {
+    if (!classification2.trim()) {
       toast({
         title: "Classification required",
         description: "Please enter a classification type",
@@ -70,13 +77,32 @@ export function ClassifyView() {
       });
       return;
     }
+    if (uniCardDoc) {
+      setClassification(classification2.trim(), [uniCardDoc.id]);
+      toast({
+        title: "Classification applied",
+        description: `Applied "${classification2}" to uni card`,
+      });
+    }
+    setStep(3);
+  };
 
-    const musaddiqIds = musaddiqDocs.map((doc) => doc.id);
-    setClassification(musaddiqClassification.trim(), musaddiqIds);
-    toast({
-      title: "Classification applied",
-      description: `Applied "${musaddiqClassification}" to ${musaddiqIds.length} documents`,
-    });
+  const handleStep3 = () => {
+    if (!classification3.trim()) {
+      toast({
+        title: "Classification required",
+        description: "Please enter a classification type",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (visaDoc) {
+      setClassification(classification3.trim(), [visaDoc.id]);
+      toast({
+        title: "Classification applied",
+        description: `Applied "${classification3}" to visa`,
+      });
+    }
     setStep('complete');
     setIsClassified(true);
   };
@@ -121,46 +147,50 @@ export function ClassifyView() {
     );
   }
 
+  const currentDoc = step === 1 ? randomNumberedDoc : step === 2 ? uniCardDoc : visaDoc;
+  const currentClassification = step === 1 ? classification1 : step === 2 ? classification2 : classification3;
+  const setCurrentClassification = step === 1 ? setClassification1 : step === 2 ? setClassification2 : setClassification3;
+  const handleSubmit = step === 1 ? handleStep1 : step === 2 ? handleStep2 : handleStep3;
+
   return (
     <div className="p-8 max-w-5xl mx-auto animate-fade-in">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">Classify Documents</h2>
         <p className="text-muted-foreground">
-          {step === 'numbered' 
-            ? 'Step 1: Classify numbered documents (1-14)' 
-            : 'Step 2: Classify Musaddiq documents'}
+          Step {step} of 3
         </p>
       </div>
 
       {/* Progress Indicator */}
       <div className="flex items-center gap-4 mb-8">
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
-          step === 'numbered' ? 'bg-primary text-primary-foreground' : 'bg-success text-success-foreground'
-        }`}>
-          {step === 'numbered' ? '1' : <CheckCircle2 className="w-4 h-4" />}
-          <span>Numbered Docs</span>
-        </div>
-        <div className="h-0.5 w-8 bg-border" />
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
-          step === 'musaddiq' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-        }`}>
-          2
-          <span>Musaddiq Docs</span>
-        </div>
+        {[1, 2, 3].map((s) => (
+          <div key={s} className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+              step === s 
+                ? 'bg-primary text-primary-foreground' 
+                : (typeof step === 'number' && s < step) 
+                  ? 'bg-success text-success-foreground'
+                  : 'bg-muted text-muted-foreground'
+            }`}>
+              {(typeof step === 'number' && s < step) ? <CheckCircle2 className="w-4 h-4" /> : s}
+            </div>
+            {s < 3 && <div className="h-0.5 w-8 bg-border" />}
+          </div>
+        ))}
       </div>
 
-      {step === 'numbered' && randomNumberedDoc && (
+      {currentDoc && (
         <div className="grid md:grid-cols-2 gap-8">
           {/* Sample Image */}
           <div className="bg-card rounded-xl border border-border overflow-hidden shadow-card">
             <div className="p-4 border-b border-border">
-              <p className="text-sm font-medium text-card-foreground">Sample Document</p>
-              <p className="text-xs text-muted-foreground">{randomNumberedDoc.name}</p>
+              <p className="text-sm font-medium text-card-foreground">Document</p>
+              <p className="text-xs text-muted-foreground">{currentDoc.name}</p>
             </div>
             <div className="aspect-[4/3] bg-muted">
               <img 
-                src={randomNumberedDoc.url} 
-                alt={randomNumberedDoc.name}
+                src={currentDoc.url} 
+                alt={currentDoc.name}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -173,7 +203,7 @@ export function ClassifyView() {
                 What type of document is this?
               </h3>
               <p className="text-sm text-muted-foreground mb-6">
-                This classification will be applied to all {numberedDocIds.length} numbered documents (1-14).
+                Enter the classification for this document.
               </p>
               
               <div className="space-y-4">
@@ -181,74 +211,21 @@ export function ClassifyView() {
                   <Label htmlFor="classification">Classification Type</Label>
                   <Input
                     id="classification"
-                    placeholder="e.g., Invoice, Receipt, Contract..."
-                    value={numberedClassification}
-                    onChange={(e) => setNumberedClassification(e.target.value)}
+                    placeholder="e.g., Invoice, ID Card, Receipt..."
+                    value={currentClassification}
+                    onChange={(e) => setCurrentClassification(e.target.value)}
                     className="mt-2"
                   />
                 </div>
                 
                 <Button 
-                  onClick={handleNumberedClassification}
+                  onClick={handleSubmit}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  Apply Classification
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {step === 3 ? 'Complete Classification' : 'Next'}
+                  {step === 3 ? <CheckCircle2 className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
                 </Button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {step === 'musaddiq' && musaddiqDocs.length > 0 && (
-        <div className="space-y-8">
-          {/* Musaddiq Documents Display */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {musaddiqDocs.map((doc) => (
-              <div key={doc.id} className="bg-card rounded-xl border border-border overflow-hidden shadow-card">
-                <div className="p-4 border-b border-border">
-                  <p className="text-sm font-medium text-card-foreground">{doc.name}</p>
-                </div>
-                <div className="aspect-[4/3] bg-muted">
-                  <img 
-                    src={doc.url} 
-                    alt={doc.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Classification Input */}
-          <div className="bg-card rounded-xl border border-border p-6 shadow-card max-w-md mx-auto">
-            <h3 className="text-lg font-semibold text-card-foreground mb-4">
-              Classify Musaddiq Documents
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              Enter the classification for both Musaddiq documents shown above.
-            </p>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="musaddiq-classification">Classification Type</Label>
-                <Input
-                  id="musaddiq-classification"
-                  placeholder="e.g., ID Document, Personal..."
-                  value={musaddiqClassification}
-                  onChange={(e) => setMusaddiqClassification(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-              
-              <Button 
-                onClick={handleMusaddiqClassification}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Complete Classification
-                <CheckCircle2 className="w-4 h-4 ml-2" />
-              </Button>
             </div>
           </div>
         </div>
