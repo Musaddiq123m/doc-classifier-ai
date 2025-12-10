@@ -7,6 +7,8 @@ interface DocumentStore {
   isClassified: boolean;
   setDocuments: (docs: Document[]) => void;
   addDocuments: (docs: Document[]) => void;
+  deleteDocument: (id: string) => void;
+  deleteDocuments: (ids: string[]) => void;
   setClassification: (classification: string, docIds: string[]) => void;
   setCurrentView: (view: ViewType) => void;
   setIsClassified: (value: boolean) => void;
@@ -22,6 +24,14 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   
   addDocuments: (docs) => set((state) => ({ 
     documents: [...state.documents, ...docs] 
+  })),
+
+  deleteDocument: (id) => set((state) => ({
+    documents: state.documents.filter((doc) => doc.id !== id),
+  })),
+
+  deleteDocuments: (ids) => set((state) => ({
+    documents: state.documents.filter((doc) => !ids.includes(doc.id)),
   })),
   
   setClassification: (classification, docIds) => set((state) => ({

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Grid3X3, List } from 'lucide-react';
+import { Search, Filter, Grid3X3, List, Trash2 } from 'lucide-react';
 import { useDocumentStore } from '@/store/documentStore';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export function ViewDocumentsView() {
-  const { documents, setCurrentView } = useDocumentStore();
+  const { documents, setCurrentView, deleteDocuments } = useDocumentStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClassification, setFilterClassification] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Get unique classifications
   const classifications = [...new Set(documents
@@ -24,6 +25,18 @@ export function ViewDocumentsView() {
     const matchesFilter = !filterClassification || doc.classification === filterClassification;
     return matchesSearch && matchesFilter;
   });
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+    const confirmed = window.confirm(`Delete ${selectedIds.length} selected document(s)?`);
+    if (!confirmed) return;
+    deleteDocuments(selectedIds);
+    setSelectedIds([]);
+  };
 
   if (documents.length === 0) {
     return (
@@ -85,7 +98,15 @@ export function ViewDocumentsView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-2 ml-auto">
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={selectedIds.length === 0}
+            onClick={handleBulkDelete}
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Delete Selected ({selectedIds.length})
+          </Button>
           <Button
             variant={viewMode === 'grid' ? 'default' : 'ghost'}
             size="icon"
@@ -119,7 +140,16 @@ export function ViewDocumentsView() {
               style={{ animationDelay: `${index * 50}ms` }}
               className="animate-slide-up"
             >
-              <DocumentCard document={doc} />
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="absolute top-2 left-2 z-10 w-4 h-4"
+                  checked={selectedIds.includes(doc.id)}
+                  onChange={() => toggleSelected(doc.id)}
+                  aria-label="Select document"
+                />
+                <DocumentCard document={doc} />
+              </div>
             </div>
           ))}
         </div>

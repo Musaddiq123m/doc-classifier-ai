@@ -1,7 +1,9 @@
-import { Download, FileImage } from 'lucide-react';
+import { Download, FileImage, Trash2 } from 'lucide-react';
 import { Document } from '@/types/document';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useDocumentStore } from '@/store/documentStore';
+import { toast } from '@/hooks/use-toast';
 
 interface DocumentCardProps {
   document: Document;
@@ -9,6 +11,7 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ document, showClassification = true }: DocumentCardProps) {
+  const { deleteDocument } = useDocumentStore();
   const handleDownload = () => {
     const link = window.document.createElement('a');
     link.href = document.url;
@@ -16,6 +19,16 @@ export function DocumentCard({ document, showClassification = true }: DocumentCa
     window.document.body.appendChild(link);
     link.click();
     window.document.body.removeChild(link);
+  };
+
+  const handleDelete = () => {
+    const confirmed = window.confirm(`Delete "${document.name}"? This cannot be undone.`);
+    if (!confirmed) return;
+    deleteDocument(document.id);
+    toast({
+      title: 'Document deleted',
+      description: `${document.name} has been removed.`,
+    });
   };
 
   return (
@@ -34,16 +47,26 @@ export function DocumentCard({ document, showClassification = true }: DocumentCa
           </div>
         )}
         
-        {/* Download Button Overlay */}
+        {/* Actions Overlay */}
         <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors duration-300 flex items-center justify-center">
-          <Button
-            size="sm"
-            onClick={handleDownload}
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-card text-card-foreground hover:bg-card/90"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Download
-          </Button>
+          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <Button
+              size="sm"
+              onClick={handleDownload}
+              className="bg-card text-card-foreground hover:bg-card/90"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
+          </div>
         </div>
       </div>
 
