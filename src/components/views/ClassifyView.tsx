@@ -6,52 +6,73 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-type ClassificationStep = 1 | 2 | 3 | 'complete';
+type ClassificationStep = 1 | 2 | 3 | 4 | 5 | 6 | 'complete';
+
+interface DocTypeGroup {
+  name: string;
+  docs: { id: string; name: string; url: string }[];
+  randomDoc: { id: string; name: string; url: string } | null;
+}
 
 export function ClassifyView() {
   const { documents, setClassification, setCurrentView, setIsClassified } = useDocumentStore();
   const { toast } = useToast();
   
   const [step, setStep] = useState<ClassificationStep>(1);
-  const [classification1, setClassification1] = useState('');
-  const [classification2, setClassification2] = useState('');
-  const [classification3, setClassification3] = useState('');
+  const [classifications, setClassifications] = useState<Record<number, string>>({
+    1: '', 2: '', 3: '', 4: '', 5: '', 6: ''
+  });
 
-  // Get a random numbered document (1-14)
-  const randomNumberedDoc = useMemo(() => {
-    const numberedDocs = documents.filter((doc) => {
-      const match = doc.name.match(/^(\d+)\.(png|jpg|jpeg)$/i);
-      return match && parseInt(match[1]) >= 1 && parseInt(match[1]) <= 14;
-    });
-    if (numberedDocs.length === 0) return null;
-    return numberedDocs[Math.floor(Math.random() * numberedDocs.length)];
-  }, [documents]);
-
-  // Get specific musaddiq documents
-  const uniCardDoc = useMemo(() => {
-    return documents.find((doc) => 
+  // Group documents by type
+  const docGroups: DocTypeGroup[] = useMemo(() => {
+    // ID documents (id1.jpg - id17.jpg)
+    const idDocs = documents.filter((doc) => /^id\d+\.jpg$/i.test(doc.name));
+    
+    // License documents (lic1.jpg - lic6.jpg)
+    const licDocs = documents.filter((doc) => /^lic\d+\.jpg$/i.test(doc.name));
+    
+    // NIC documents (nic1.jpg - nic26.jpg)
+    const nicDocs = documents.filter((doc) => /^nic\d+\.jpg$/i.test(doc.name));
+    
+    // Passport documents (pass1.jpg - pass8.jpg)
+    const passDocs = documents.filter((doc) => /^pass\d+\.jpg$/i.test(doc.name));
+    
+    // Musaddiq uni card
+    const uniCardDocs = documents.filter((doc) => 
       doc.name.toLowerCase().includes('musaddiq') && doc.name.toLowerCase().includes('uni')
     );
-  }, [documents]);
-
-  const visaDoc = useMemo(() => {
-    return documents.find((doc) => 
+    
+    // Musaddiq visa
+    const visaDocs = documents.filter((doc) => 
       doc.name.toLowerCase().includes('musaddiq') && doc.name.toLowerCase().includes('visa')
     );
+
+    const getRandomDoc = (docs: typeof documents) => {
+      if (docs.length === 0) return null;
+      return docs[Math.floor(Math.random() * docs.length)];
+    };
+
+    return [
+      { name: 'ID Documents', docs: idDocs, randomDoc: getRandomDoc(idDocs) },
+      { name: 'License Documents', docs: licDocs, randomDoc: getRandomDoc(licDocs) },
+      { name: 'NIC Documents', docs: nicDocs, randomDoc: getRandomDoc(nicDocs) },
+      { name: 'Passport Documents', docs: passDocs, randomDoc: getRandomDoc(passDocs) },
+      { name: 'Uni Card', docs: uniCardDocs, randomDoc: getRandomDoc(uniCardDocs) },
+      { name: 'Visa', docs: visaDocs, randomDoc: getRandomDoc(visaDocs) },
+    ];
   }, [documents]);
 
-  // Get all numbered document IDs
-  const numberedDocIds = useMemo(() => {
-    return documents
-      .filter((doc) => {
-        const match = doc.name.match(/^(\d+)\.(png|jpg|jpeg)$/i);
-        return match && parseInt(match[1]) >= 1 && parseInt(match[1]) <= 14;
-      })
-      .map((doc) => doc.id);
-  }, [documents]);
+  // Filter to only groups that have documents
+  const activeGroups = useMemo(() => {
+    return docGroups.filter(group => group.docs.length > 0);
+  }, [docGroups]);
 
-  const handleStep1 = () => {
-    if (!classification1.trim()) {
+  const totalSteps = activeGroups.length;
+
+  const handleStepSubmit = () => {
+    const currentClassification = classifications[step as number];
+    
+    if (!currentClassification?.trim()) {
       toast({
         title: "Classification required",
         description: "Please enter a classification type",
@@ -59,52 +80,23 @@ export function ClassifyView() {
       });
       return;
     }
-    // Apply to all numbered documents
-    setClassification(classification1.trim(), numberedDocIds);
-    toast({
-      title: "Classification applied",
-      description: `Applied "${classification1}" to ${numberedDocIds.length} documents`,
-    });
-    setStep(2);
-  };
 
-  const handleStep2 = () => {
-    if (!classification2.trim()) {
-      toast({
-        title: "Classification required",
-        description: "Please enter a classification type",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (uniCardDoc) {
-      setClassification(classification2.trim(), [uniCardDoc.id]);
+    const currentGroup = activeGroups[(step as number) - 1];
+    if (currentGroup) {
+      const docIds = currentGroup.docs.map(doc => doc.id);
+      setClassification(currentClassification.trim(), docIds);
       toast({
         title: "Classification applied",
-        description: `Applied "${classification2}" to uni card`,
+        description: `Applied "${currentClassification}" to ${docIds.length} document${docIds.length > 1 ? 's' : ''}`,
       });
     }
-    setStep(3);
-  };
 
-  const handleStep3 = () => {
-    if (!classification3.trim()) {
-      toast({
-        title: "Classification required",
-        description: "Please enter a classification type",
-        variant: "destructive",
-      });
-      return;
+    if ((step as number) < totalSteps) {
+      setStep(((step as number) + 1) as ClassificationStep);
+    } else {
+      setStep('complete');
+      setIsClassified(true);
     }
-    if (visaDoc) {
-      setClassification(classification3.trim(), [visaDoc.id]);
-      toast({
-        title: "Classification applied",
-        description: `Applied "${classification3}" to visa`,
-      });
-    }
-    setStep('complete');
-    setIsClassified(true);
   };
 
   if (documents.length === 0) {
@@ -114,6 +106,22 @@ export function ClassifyView() {
           <h2 className="text-2xl font-bold text-foreground mb-4">No Documents</h2>
           <p className="text-muted-foreground mb-6">
             Please upload documents first before classification.
+          </p>
+          <Button onClick={() => setCurrentView('upload')}>
+            Go to Upload
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeGroups.length === 0) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto animate-fade-in">
+        <div className="text-center py-16">
+          <h2 className="text-2xl font-bold text-foreground mb-4">No Recognizable Documents</h2>
+          <p className="text-muted-foreground mb-6">
+            No document types were recognized in the uploaded files.
           </p>
           <Button onClick={() => setCurrentView('upload')}>
             Go to Upload
@@ -147,23 +155,26 @@ export function ClassifyView() {
     );
   }
 
-  const currentDoc = step === 1 ? randomNumberedDoc : step === 2 ? uniCardDoc : visaDoc;
-  const currentClassification = step === 1 ? classification1 : step === 2 ? classification2 : classification3;
-  const setCurrentClassification = step === 1 ? setClassification1 : step === 2 ? setClassification2 : setClassification3;
-  const handleSubmit = step === 1 ? handleStep1 : step === 2 ? handleStep2 : handleStep3;
+  const currentGroup = activeGroups[(step as number) - 1];
+  const currentDoc = currentGroup?.randomDoc;
+  const currentClassification = classifications[step as number] || '';
+
+  const updateClassification = (value: string) => {
+    setClassifications(prev => ({ ...prev, [step as number]: value }));
+  };
 
   return (
     <div className="p-8 max-w-5xl mx-auto animate-fade-in">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">Classify Documents</h2>
         <p className="text-muted-foreground">
-          Step {step} of 3
+          Step {step} of {totalSteps}
         </p>
       </div>
 
       {/* Progress Indicator */}
-      <div className="flex items-center gap-4 mb-8">
-        {[1, 2, 3].map((s) => (
+      <div className="flex items-center gap-2 mb-8 flex-wrap">
+        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
               step === s 
@@ -174,7 +185,7 @@ export function ClassifyView() {
             }`}>
               {(typeof step === 'number' && s < step) ? <CheckCircle2 className="w-4 h-4" /> : s}
             </div>
-            {s < 3 && <div className="h-0.5 w-8 bg-border" />}
+            {s < totalSteps && <div className="h-0.5 w-4 bg-border" />}
           </div>
         ))}
       </div>
@@ -203,7 +214,7 @@ export function ClassifyView() {
                 What type of document is this?
               </h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Enter the classification for this document.
+                Enter the classification for this document. This will apply to {currentGroup.docs.length} document{currentGroup.docs.length > 1 ? 's' : ''}.
               </p>
               
               <div className="space-y-4">
@@ -213,17 +224,17 @@ export function ClassifyView() {
                     id="classification"
                     placeholder="e.g., Invoice, ID Card, Receipt..."
                     value={currentClassification}
-                    onChange={(e) => setCurrentClassification(e.target.value)}
+                    onChange={(e) => updateClassification(e.target.value)}
                     className="mt-2"
                   />
                 </div>
                 
                 <Button 
-                  onClick={handleSubmit}
+                  onClick={handleStepSubmit}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  {step === 3 ? 'Complete Classification' : 'Next'}
-                  {step === 3 ? <CheckCircle2 className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
+                  {(step as number) === totalSteps ? 'Complete Classification' : 'Next'}
+                  {(step as number) === totalSteps ? <CheckCircle2 className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
                 </Button>
               </div>
             </div>
