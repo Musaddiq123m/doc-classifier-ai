@@ -17,7 +17,9 @@ export function SearchByPromptView() {
     
     setIsSearching(true);
     
-    // Simulate search delay
+    // Random delay between 1-2 seconds
+    const delay = Math.floor(Math.random() * 1000) + 1000;
+    
     setTimeout(() => {
       const promptLower = prompt.toLowerCase();
       let results: typeof documents = [];
@@ -45,7 +47,7 @@ export function SearchByPromptView() {
       setSearchResults(results);
       setHasSearched(true);
       setIsSearching(false);
-    }, 500);
+    }, delay);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
